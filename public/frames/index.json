@@ -1,0 +1,81 @@
+{
+  "count": 4,
+  "devices": [
+    {
+      "category": "phones",
+      "device": "iphone-16-pro-max",
+      "variation": "desert-titanium",
+      "name": "iPhone 16 Pro Max (Desert Titanium)",
+      "frame_size": {
+        "height": 3068,
+        "width": 1520
+      },
+      "screen": {
+        "height": 2868,
+        "width": 1320,
+        "x": 100,
+        "y": 100
+      },
+      "hex_color": "#897164",
+      "png": "/frames/phones/iphone-16-pro-max/desert-titanium/desert-titanium.png",
+      "svg": "/frames/phones/iphone-16-pro-max/desert-titanium/desert-titanium.svg"
+    },
+    {
+      "category": "phones",
+      "device": "iphone-16",
+      "variation": "teal",
+      "name": "iPhone 16 (Teal)",
+      "frame_size": {
+        "height": 2756,
+        "width": 1379
+      },
+      "screen": {
+        "height": 2556,
+        "width": 1179,
+        "x": 100,
+        "y": 100
+      },
+      "hex_color": "#516E74",
+      "png": "/frames/phones/iphone-16/teal/teal.png",
+      "svg": "/frames/phones/iphone-16/teal/teal.svg"
+    },
+    {
+      "category": "phones",
+      "device": "iphone-16",
+      "variation": "ultramarine",
+      "name": "iPhone 16 (Ultramarine)",
+      "frame_size": {
+        "height": 2756,
+        "width": 1379
+      },
+      "screen": {
+        "height": 2556,
+        "width": 1179,
+        "x": 100,
+        "y": 100
+      },
+      "hex_color": "#535F9A",
+      "png": "/frames/phones/iphone-16/ultramarine/ultramarine.png",
+      "svg": "/frames/phones/iphone-16/ultramarine/ultramarine.svg"
+    },
+    {
+      "category": "phones",
+      "device": "iphone",
+      "variation": "orange-titanium",
+      "name": "iPhone (Orange Titanium)",
+      "frame_size": {
+        "height": 1793,
+        "width": 877
+      },
+      "screen": {
+        "height": 1660,
+        "width": 737,
+        "x": 69,
+        "y": 61
+      },
+      "hex_color": "#D9632C",
+      "png": "/frames/phones/iphone/orange-titanium/orange-titanium.png",
+      "svg": "/frames/phones/iphone/orange-titanium/orange-titanium.svg"
+    }
+  ]
+}
