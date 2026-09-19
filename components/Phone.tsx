@@ -1,17 +1,18 @@
 "use client";
 
-import { useState, useCallback, useId } from "react";
+import { useCallback, useId } from "react";
 import type { ChangeEvent, DragEvent } from "react";
+import type { FrameTemplate } from "@/lib/types";
 
 interface PhoneProps {
-  framedImageUrl: string | null;
-  isLoading: boolean;
+  userImageUrl: string | null;
+  template: FrameTemplate | null;
   onFileSelect: (file: File) => void;
   emptyFrameUrl: string | null;
   className?: string;
 }
 
-export function Phone({ framedImageUrl, isLoading, onFileSelect, emptyFrameUrl, className }: PhoneProps) {
+export function Phone({ userImageUrl, template, onFileSelect, emptyFrameUrl, className }: PhoneProps) {
   const inputId = useId();
 
   const handleDrop = useCallback(
@@ -39,59 +40,68 @@ export function Phone({ framedImageUrl, isLoading, onFileSelect, emptyFrameUrl, 
     [onFileSelect]
   );
 
+  const frameImageUrl = template?.frame ?? emptyFrameUrl;
+  const screen = template?.screen;
+  const frameSize = template?.frameSize;
+
   return (
     <div
       className={`relative flex items-center justify-center w-full h-full bg-transparent ${className ?? ""}`}
       onDrop={handleDrop}
       onDragOver={handleDragOver}
     >
-      {/* Show framed result or empty frame */}
-      {framedImageUrl ? (
+      {/* User's screenshot, clipped to the frame's exact rounded screen cutout so
+          its square corners never poke out past the frame's rounded edge. Pure
+          CSS (positioned + clip-path), so it shows the instant a file is picked
+          — no processing step, no spinner. */}
+      {userImageUrl && screen && frameSize && (
         <img
-          src={framedImageUrl}
-          alt="Framed screenshot"
-          className="w-full h-full object-contain"
+          src={userImageUrl}
+          alt="Your screenshot"
+          className="absolute object-cover"
+          style={{
+            left: `${(screen.x / frameSize.width) * 100}%`,
+            top: `${(screen.y / frameSize.height) * 100}%`,
+            width: `${(screen.width / frameSize.width) * 100}%`,
+            height: `${(screen.height / frameSize.height) * 100}%`,
+            clipPath: template?.screenClipPolygon
+              ? `polygon(${template.screenClipPolygon})`
+              : undefined,
+          }}
         />
-      ) : (
-        <>
-          {emptyFrameUrl && (
-            <img
-              src={emptyFrameUrl}
-              alt="Device frame"
-              className="w-full h-full object-contain pointer-events-none select-none"
-            />
-          )}
-          
-          {/* Upload hint overlay */}
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            {isLoading ? (
-              <div className="flex items-center justify-center">
-                <div className="w-8 h-8 border-3 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center gap-2">
-                <svg
-                  className="w-12 h-12 text-zinc-400 dark:text-zinc-600 opacity-60"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                  />
-                </svg>
-                <p className="text-sm text-zinc-600 dark:text-zinc-400 text-center font-medium">
-                  Drag and drop or <span className="text-blue-600 dark:text-blue-400 underline">browse files</span>
-                </p>
-              </div>
-            )}
-          </div>
-        </>
       )}
-      
+
+      {frameImageUrl && (
+        <img
+          src={frameImageUrl}
+          alt="Device frame"
+          className="w-full h-full object-contain pointer-events-none select-none"
+        />
+      )}
+
+      {!userImageUrl && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="flex flex-col items-center gap-2">
+            <svg
+              className="w-12 h-12 text-zinc-400 dark:text-zinc-600 opacity-60"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+              />
+            </svg>
+            <p className="text-sm text-zinc-600 dark:text-zinc-400 text-center font-medium">
+              Drag and drop or <span className="text-blue-600 dark:text-blue-400 underline">browse files</span>
+            </p>
+          </div>
+        </div>
+      )}
+
       <input
         type="file"
         accept="image/png,image/jpeg,image/webp"

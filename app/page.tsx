@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Phone } from "@/components/Phone";
 import { SettingsPanel } from "@/components/SettingsPanel";
-import { applyDeviceFrame, findTemplate, listDevices } from "@/lib/api";
+import { findTemplate, listDevices } from "@/lib/api";
+import { composeFrame } from "@/lib/compose-frame";
 import { DeviceListResponse, FrameTemplate } from "@/lib/types";
 
 const FALLBACK_CATEGORY = "phones";
@@ -21,10 +22,8 @@ export default function Home() {
   const [device, setDevice] = useState(DEFAULT_DEVICE);
   const [variation, setVariation] = useState(DEFAULT_VARIATION);
   const [template, setTemplate] = useState<FrameTemplate | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [framedImageUrl, setFramedImageUrl] = useState<string | null>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const requestIdRef = useRef(0);
   const defaultsAppliedRef = useRef(false);
 
   // Fetch device list on mount
@@ -120,84 +119,47 @@ export default function Home() {
     };
   }, [category, device, variation]);
 
-  // Auto-apply frame when a file is selected
+  // Instant, local preview: an object URL for the picked file, positioned and
+  // clipped to the frame's screen cutout entirely with CSS (see Phone.tsx) —
+  // no processing step, so it shows the moment a file is chosen.
+  const previewUrl = useMemo(
+    () => (selectedFile ? URL.createObjectURL(selectedFile) : null),
+    [selectedFile]
+  );
   useEffect(() => {
-    if (!selectedFile || !category || !device || !variation) {
-      return;
-    }
-
-    const requestId = requestIdRef.current + 1;
-    requestIdRef.current = requestId;
-
-    setIsProcessing(true);
-    setError(null);
-    setFramedImageUrl((current) => {
-      if (current) URL.revokeObjectURL(current);
-      return null;
-    });
-
-    const applyFrame = async () => {
-      try {
-        const blob = await applyDeviceFrame({
-          file: selectedFile,
-          device,
-          variation,
-          category,
-        });
-
-        const url = URL.createObjectURL(blob);
-
-        if (requestId !== requestIdRef.current) {
-          URL.revokeObjectURL(url);
-          return;
-        }
-
-        setFramedImageUrl(url);
-      } catch (err) {
-        if (requestId !== requestIdRef.current) return;
-        setError(err instanceof Error ? err.message : "Failed to process image");
-      } finally {
-        if (requestId === requestIdRef.current) {
-          setIsProcessing(false);
-        }
-      }
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
     };
-
-    applyFrame();
-  }, [selectedFile, category, device, variation]);
-
-  useEffect(() => () => {
-    if (framedImageUrl) URL.revokeObjectURL(framedImageUrl);
-  }, [framedImageUrl]);
+  }, [previewUrl]);
 
   const handleFileSelect = (file: File) => {
     setSelectedFile(file);
-    setFramedImageUrl((current) => {
-      if (current) URL.revokeObjectURL(current);
-      return null;
-    });
     setError(null);
   };
 
-  const handleDownload = () => {
-    if (framedImageUrl) {
+  const handleDownload = async () => {
+    if (!previewUrl || !template) return;
+
+    setIsDownloading(true);
+    setError(null);
+    try {
+      const blob = await composeFrame(previewUrl, template);
+      const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
-      a.href = framedImageUrl;
-      const timestamp = new Date().toISOString().split('T')[0];
-      const filename = `${device}-${variation}-${timestamp}.png`;
-      a.download = filename;
+      a.href = url;
+      const timestamp = new Date().toISOString().split("T")[0];
+      a.download = `${device}-${variation}-${timestamp}.png`;
       a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to prepare download");
+    } finally {
+      setIsDownloading(false);
     }
   };
 
   const handleReset = () => {
-    requestIdRef.current += 1;
-    setIsProcessing(false);
     setSelectedFile(null);
-    setFramedImageUrl((current) => {
-      if (current) URL.revokeObjectURL(current);
-      return null;
-    });
     setError(null);
   };
 
@@ -216,8 +178,8 @@ export default function Home() {
             }}
           >
             <Phone
-              framedImageUrl={framedImageUrl}
-              isLoading={isProcessing}
+              userImageUrl={previewUrl}
+              template={template}
               onFileSelect={handleFileSelect}
               emptyFrameUrl={frameImageUrl}
             />
@@ -236,9 +198,9 @@ export default function Home() {
             onVariationChange={setVariation}
             onDownload={handleDownload}
             onNewImage={handleReset}
-            isProcessing={isProcessing}
+            isProcessing={isDownloading}
             error={error}
-            hasFramedImage={framedImageUrl !== null}
+            hasFramedImage={selectedFile !== null}
             hasFile={selectedFile !== null}
           />
         </div>

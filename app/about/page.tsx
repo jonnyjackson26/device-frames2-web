@@ -20,12 +20,12 @@ export default function About() {
         </p>
 
         <p>
-          This site composites frames itself, on the server, using{" "}
-          <a href="https://sharp.pixelplumbing.com/" target="_blank" rel="noopener noreferrer" className={linkClass}>
-            sharp
-          </a>{" "}
-          — there&apos;s no separate API to call. The frames themselves (transparent PNGs
-          and SVGs) are generated from a data-driven device-frame library.
+          This site composites frames itself, entirely in your browser (no upload, no
+          server round-trip) — there&apos;s no separate API to call. The frames themselves
+          (transparent PNGs and SVGs) come from{" "}
+          <a href="https://github.com/jonnyjackson26/creating-device-frames" target="_blank" rel="noopener noreferrer" className={linkClass}>
+            creating-device-frames
+          </a>, a data-driven, open-source device-frame library.
         </p>
 
         <p>

@@ -1,10 +1,3 @@
-export interface FrameOptions {
-  file: File;
-  device: string;
-  variation: string;
-  category?: string;
-}
-
 export interface DeviceScreen {
   x: number;
   y: number;
@@ -39,6 +32,14 @@ export interface FrameTemplate {
   frameSize: DeviceSize;
   hexColor: string;
   name: string;
+  /**
+   * CSS polygon() points (percentages of the screen box's own
+   * width/height) tracing the device's rounded-corner screen cutout.
+   * Used to clip an uploaded screenshot so its square corners don't
+   * poke out past the frame's rounded edge. Null if the source frame
+   * didn't publish one (falls back to a plain rectangular crop).
+   */
+  screenClipPolygon: string | null;
 }
 
 export interface FindTemplateResponse {

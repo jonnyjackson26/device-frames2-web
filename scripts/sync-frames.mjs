@@ -51,6 +51,22 @@ const outDir = path.join(repoRoot, "public", "frames");
 await rm(outDir, { recursive: true, force: true });
 await mkdir(outDir, { recursive: true });
 
+// The generated <id>.html clips its `.screen` slot to the device's exact
+// rounded-corner (superellipse) shape via a CSS polygon, expressed as
+// percentages of the screen box's own width/height. We reuse that same
+// polygon client-side to clip an uploaded screenshot, instead of the
+// mask.png the old device-frames-media/API pipeline used — a plain
+// rectangular "cover" crop of the screen rect isn't enough on its own,
+// because the screen rect's own corners sit outside the device's rounded
+// silhouette, so a rectangular image's sharp corners poke out past both
+// the screen cutout *and* the frame's own rounded edge.
+function extractScreenClipPolygon(html) {
+  const screenRuleMatch = html.match(/\.screen\s*\{[^}]*\}/);
+  if (!screenRuleMatch) return null;
+  const polygonMatch = screenRuleMatch[0].match(/clip-path:\s*polygon\(([^)]+)\)/);
+  return polygonMatch ? polygonMatch[1].trim() : null;
+}
+
 const devices = [];
 
 for (const [category, models] of Object.entries(sourceIndex)) {
@@ -62,6 +78,7 @@ for (const [category, models] of Object.entries(sourceIndex)) {
 
       const pngSrc = path.join(sourceDir, entry.png);
       const svgSrc = path.join(sourceDir, entry.svg);
+      const htmlSrc = path.join(sourceDir, entry.html);
       const pngDestName = path.basename(entry.png);
       const svgDestName = path.basename(entry.svg);
 
@@ -74,6 +91,16 @@ for (const [category, models] of Object.entries(sourceIndex)) {
         await copyFile(svgSrc, path.join(destDir, svgDestName));
       }
 
+      let screenClipPolygon = null;
+      if (existsSync(htmlSrc)) {
+        screenClipPolygon = extractScreenClipPolygon(await readFile(htmlSrc, "utf8"));
+      }
+      if (!screenClipPolygon) {
+        console.warn(
+          `No screen clip-path found for ${category}/${device}/${variation} — uploads will be a plain rectangular crop.`
+        );
+      }
+
       devices.push({
         category,
         device,
@@ -81,6 +108,7 @@ for (const [category, models] of Object.entries(sourceIndex)) {
         name: entry.name,
         frame_size: entry.frameSize,
         screen: entry.screen,
+        screen_clip_polygon: screenClipPolygon,
         hex_color: entry.hexColor ?? "",
         png: `/frames/${relDir}/${pngDestName}`.replace(/\\/g, "/"),
         svg: existsSync(svgSrc) ? `/frames/${relDir}/${svgDestName}`.replace(/\\/g, "/") : null,

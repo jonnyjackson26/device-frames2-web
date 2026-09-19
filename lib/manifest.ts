@@ -9,6 +9,7 @@ export interface ManifestEntry {
   name: string;
   frame_size: DeviceSize;
   screen: DeviceScreen;
+  screen_clip_polygon: string | null;
   hex_color: string;
   png: string;
   svg: string | null;

@@ -22,6 +22,7 @@ export async function GET() {
         frameSize: entry.frame_size,
         hexColor: entry.hex_color ?? "",
         name: entry.name,
+        screenClipPolygon: entry.screen_clip_polygon,
       },
     }));
 

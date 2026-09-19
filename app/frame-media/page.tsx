@@ -62,6 +62,14 @@ export default function FrameMediaPage() {
           <p className="text-xl text-slate-600 mb-6">
             Browse and download device frame PNGs, SVGs, and templates
           </p>
+          <a
+            href="https://github.com/jonnyjackson26/creating-device-frames"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block text-blue-600 hover:text-blue-700 font-medium transition-colors"
+          >
+            View Source Data on GitHub
+          </a>
         </div>
 
         {loading && (
