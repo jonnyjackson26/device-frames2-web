@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import Image from 'next/image';
 import JSZip from 'jszip';
 
 interface FrameTemplate {
@@ -90,11 +89,12 @@ export default function FrameCard({ category, device, variants }: FrameCardProps
       {/* Frame Preview */}
       <div className="relative w-full h-48 bg-slate-100 flex items-center justify-center overflow-hidden group">
         {selectedVariant.thumbnail ? (
-          <Image
+          // Plain <img>, not next/image: these are small, self-hosted SVGs we
+          // vendor ourselves, so there's nothing for Next's image optimizer
+          // to usefully do (and it blocks SVG sources by default anyway).
+          <img
             src={selectedVariant.thumbnail}
             alt={`${device} - ${selectedVariant.variant}`}
-            width={200}
-            height={200}
             className="object-contain max-w-full max-h-full"
           />
         ) : (

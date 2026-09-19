@@ -28,7 +28,9 @@ export async function GET(request: NextRequest) {
   return NextResponse.json(
     {
       template_path: {
-        frame: entry.png,
+        // Prefer the SVG: same code path as an <img>/<canvas> source, but
+        // ~30x smaller and crisp at any zoom instead of a fixed raster size.
+        frame: entry.svg ?? entry.png,
         svg: entry.svg,
         screen: entry.screen,
         frameSize: entry.frame_size,

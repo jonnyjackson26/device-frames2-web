@@ -164,26 +164,19 @@ export default function Home() {
   };
 
   const frameImageUrl = template?.frame ?? "/placeholder_frame.png";
-  const frameSize = template?.frameSize;
 
   return (
     <div className="h-screen bg-gradient-to-br from-zinc-50 to-zinc-100 dark:from-zinc-950 dark:to-black font-sans overflow-auto md:overflow-hidden p-4">
       <main className="flex flex-col md:flex-row md:h-full gap-8">
         {/* Phone Panel */}
-        <div className="h-screen md:h-full md:flex-1 min-w-0 bg-white dark:bg-zinc-900 rounded-xl shadow-lg p-6 flex flex-col items-center justify-center md:overflow-auto">
-          <div
-            className="relative w-full h-full max-w-full flex items-center justify-center"
-            style={{
-              aspectRatio: frameSize ? `${frameSize.width}/${frameSize.height}` : "9/16",
-            }}
-          >
-            <Phone
-              userImageUrl={previewUrl}
-              template={template}
-              onFileSelect={handleFileSelect}
-              emptyFrameUrl={frameImageUrl}
-            />
-          </div>
+        <div className="h-screen md:h-full md:flex-1 min-w-0 bg-white dark:bg-zinc-900 rounded-xl shadow-lg p-6 flex items-center justify-center md:overflow-auto">
+          <Phone
+            userImageUrl={previewUrl}
+            template={template}
+            onFileSelect={handleFileSelect}
+            emptyFrameUrl={frameImageUrl}
+            className="max-h-full"
+          />
         </div>
 
         {/* Settings Panel */}

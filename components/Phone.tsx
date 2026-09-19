@@ -45,11 +45,25 @@ export function Phone({ userImageUrl, template, onFileSelect, emptyFrameUrl, cla
   const frameSize = template?.frameSize;
 
   return (
+    // Shrink-wraps to the frame <img>'s own rendered box (native `<img>`
+    // sizing, not a manually-computed aspect-ratio) so the percentage-
+    // positioned screenshot overlay below is always measured against the
+    // frame's *actual* box — never a taller/wider container that would
+    // scale it wrong and let it spill past the frame's edges.
     <div
-      className={`relative flex items-center justify-center w-full h-full bg-transparent ${className ?? ""}`}
+      className={`relative inline-block max-w-full max-h-full min-h-0 min-w-0 bg-transparent ${className ?? ""}`}
       onDrop={handleDrop}
       onDragOver={handleDragOver}
     >
+      {frameImageUrl && (
+        <img
+          src={frameImageUrl}
+          alt="Device frame"
+          className="block max-w-full max-h-full w-auto h-auto select-none pointer-events-none"
+          draggable={false}
+        />
+      )}
+
       {/* User's screenshot, clipped to the frame's exact rounded screen cutout so
           its square corners never poke out past the frame's rounded edge. Pure
           CSS (positioned + clip-path), so it shows the instant a file is picked
@@ -58,7 +72,7 @@ export function Phone({ userImageUrl, template, onFileSelect, emptyFrameUrl, cla
         <img
           src={userImageUrl}
           alt="Your screenshot"
-          className="absolute object-cover"
+          className="absolute object-cover pointer-events-none"
           style={{
             left: `${(screen.x / frameSize.width) * 100}%`,
             top: `${(screen.y / frameSize.height) * 100}%`,
@@ -68,14 +82,6 @@ export function Phone({ userImageUrl, template, onFileSelect, emptyFrameUrl, cla
               ? `polygon(${template.screenClipPolygon})`
               : undefined,
           }}
-        />
-      )}
-
-      {frameImageUrl && (
-        <img
-          src={frameImageUrl}
-          alt="Device frame"
-          className="w-full h-full object-contain pointer-events-none select-none"
         />
       )}
 

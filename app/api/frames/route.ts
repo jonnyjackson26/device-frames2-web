@@ -14,9 +14,11 @@ export async function GET() {
       name: entry.name,
       framePath: entry.png,
       svgPath: entry.svg,
-      thumbnail: entry.png,
+      // SVG for the on-page thumbnail (far smaller, crisp at any size);
+      // framePath above still offers the raster PNG as a download option.
+      thumbnail: entry.svg ?? entry.png,
       template: {
-        frame: entry.png,
+        frame: entry.svg ?? entry.png,
         svg: entry.svg,
         screen: entry.screen,
         frameSize: entry.frame_size,
