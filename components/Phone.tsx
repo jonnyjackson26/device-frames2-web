@@ -1,13 +1,17 @@
 "use client";
 
 import { useCallback, useId, useLayoutEffect, useRef, useState } from "react";
-import type { ChangeEvent, DragEvent } from "react";
+import type { ChangeEvent, CSSProperties, DragEvent } from "react";
 import { InlineSvg } from "@/components/InlineSvg";
 import { usePinchZoom } from "@/lib/use-pinch-zoom";
 import type { FrameTemplate } from "@/lib/types";
 
 const FRAME_CLASS_NAME = "block w-full h-full select-none pointer-events-none";
 const FALLBACK_RATIO = 9 / 19.5; // used only before a template has loaded
+// Suppresses iOS's own tap-highlight "bubble" (sized to whatever native
+// element was tapped) so our own whole-phone active: press effect below is
+// the only visible feedback.
+const NO_TAP_HIGHLIGHT: CSSProperties = { WebkitTapHighlightColor: "transparent" };
 
 interface PhoneProps {
   userImageUrl: string | null;
@@ -21,7 +25,7 @@ export function Phone({ userImageUrl, template, onFileSelect, emptyFrameUrl, cla
   const inputId = useId();
   const outerRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState<{ width: number; height: number } | null>(null);
-  const pinchZoom = usePinchZoom();
+  const pinchZoom = usePinchZoom(outerRef);
 
   const frameSize = template?.frameSize;
   const ratio = frameSize ? frameSize.width / frameSize.height : FALLBACK_RATIO;
@@ -83,20 +87,46 @@ export function Phone({ userImageUrl, template, onFileSelect, emptyFrameUrl, cla
 
   const frameImageUrl = template?.frame ?? emptyFrameUrl;
   const screen = template?.screen;
+  const screenClipStyle: CSSProperties | undefined = screen && frameSize
+    ? {
+        left: `${(screen.x / frameSize.width) * 100}%`,
+        top: `${(screen.y / frameSize.height) * 100}%`,
+        width: `${(screen.width / frameSize.width) * 100}%`,
+        height: `${(screen.height / frameSize.height) * 100}%`,
+        clipPath: template?.screenClipPolygon ? `polygon(${template.screenClipPolygon})` : undefined,
+      }
+    : undefined;
 
   return (
     <div
       ref={outerRef}
-      className={`relative w-full h-full flex items-center justify-center bg-transparent touch-none overflow-hidden ${className ?? ""}`}
+      className={`relative w-full h-full flex items-center justify-center bg-transparent touch-none overflow-hidden active:opacity-90 transition-opacity duration-150 ${className ?? ""}`}
+      style={NO_TAP_HIGHLIGHT}
       onDrop={handleDrop}
       onDragOver={handleDragOver}
-      {...pinchZoom.handlers}
     >
       {size && (
-        <div
-          className="relative"
-          style={{ width: size.width, height: size.height, ...pinchZoom.style }}
-        >
+        <div className="relative" style={{ width: size.width, height: size.height, ...pinchZoom.style }}>
+          {/* A plain backing behind the screen slot, so it reads as a blank
+              device screen instead of showing the page's background (the dot
+              grid) through the frame's transparent screen cutout. */}
+          {screenClipStyle && (
+            <div className="absolute bg-white" style={screenClipStyle} />
+          )}
+
+          {/* User's screenshot, clipped to the frame's exact rounded screen cutout so
+              its square corners never poke out past the frame's rounded edge. Pure
+              CSS (positioned + clip-path), so it shows the instant a file is picked
+              — no processing step, no spinner. */}
+          {userImageUrl && screenClipStyle && (
+            <img
+              src={userImageUrl}
+              alt="Your screenshot"
+              className="absolute object-cover pointer-events-none"
+              style={screenClipStyle}
+            />
+          )}
+
           {frameImageUrl &&
             (frameImageUrl.endsWith(".svg") ? (
               // Inline, not <img src>: Safari decodes an <img>-sourced SVG to a
@@ -108,27 +138,6 @@ export function Phone({ userImageUrl, template, onFileSelect, emptyFrameUrl, cla
             ) : (
               <img src={frameImageUrl} alt="Device frame" className={FRAME_CLASS_NAME} draggable={false} />
             ))}
-
-          {/* User's screenshot, clipped to the frame's exact rounded screen cutout so
-              its square corners never poke out past the frame's rounded edge. Pure
-              CSS (positioned + clip-path), so it shows the instant a file is picked
-              — no processing step, no spinner. */}
-          {userImageUrl && screen && frameSize && (
-            <img
-              src={userImageUrl}
-              alt="Your screenshot"
-              className="absolute object-cover pointer-events-none"
-              style={{
-                left: `${(screen.x / frameSize.width) * 100}%`,
-                top: `${(screen.y / frameSize.height) * 100}%`,
-                width: `${(screen.width / frameSize.width) * 100}%`,
-                height: `${(screen.height / frameSize.height) * 100}%`,
-                clipPath: template?.screenClipPolygon
-                  ? `polygon(${template.screenClipPolygon})`
-                  : undefined,
-              }}
-            />
-          )}
         </div>
       )}
 
@@ -160,6 +169,7 @@ export function Phone({ userImageUrl, template, onFileSelect, emptyFrameUrl, cla
         accept="image/png,image/jpeg,image/webp"
         onChange={handleFileInput}
         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+        style={NO_TAP_HIGHLIGHT}
         id={inputId}
       />
     </div>

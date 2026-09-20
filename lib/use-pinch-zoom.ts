@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
-import type { PointerEvent as ReactPointerEvent } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { RefObject } from "react";
 
 interface Transform {
   scale: number;
@@ -11,111 +11,161 @@ interface Transform {
 
 const IDENTITY: Transform = { scale: 1, x: 0, y: 0 };
 
+function touchDist(a: Touch, b: Touch) {
+  return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+}
+
 /**
  * Pinch-to-zoom and drag-to-pan for a single element, independent of the
- * page's own zoom. At rest (scale 1) it gets out of the way entirely — a
- * plain tap/click/drag still reaches whatever's underneath (the file
- * input, drag-and-drop) untouched. Only once a second finger comes down,
- * or the element is already zoomed in, does it capture the gesture.
+ * page's own zoom. At rest (scale 1, one finger) it does nothing — a plain
+ * tap/click/drag still reaches whatever's underneath (the file input,
+ * drag-and-drop) untouched.
+ *
+ * Attaches real (non-React-synthetic) event listeners with
+ * { passive: false } via a ref, rather than JSX on* props. React's
+ * synthetic onTouchMove/onWheel handlers are attached passively by
+ * default, so calling preventDefault() inside a JSX handler silently
+ * fails to stop the browser's own gesture — that's the likely reason an
+ * earlier version of this didn't reliably suppress native pinch/scroll.
+ * Uses TouchEvent (not PointerEvent), so there's no setPointerCapture at
+ * all — touch events already keep going to the element a touch started
+ * on, and every handler is wrapped defensively so a gesture edge case
+ * (a division by zero, an unexpected event ordering) can never throw an
+ * uncaught error that crashes the page.
  */
-export function usePinchZoom(maxScale = 4) {
+export function usePinchZoom<T extends HTMLElement>(ref: RefObject<T | null>, maxScale = 4) {
   const [transform, setTransform] = useState<Transform>(IDENTITY);
-  // Mirrors pointers.current.size > 0, but as state: reading a ref during
-  // render (to decide whether to transition) isn't safe, so this is kept
-  // in sync at the same call sites that mutate the ref.
   const [isGesturing, setIsGesturing] = useState(false);
-  const pointers = useRef(new Map<number, { x: number; y: number }>());
-  const pinchStart = useRef<{ dist: number; scale: number } | null>(null);
-  const panStart = useRef<{ x: number; y: number; originX: number; originY: number } | null>(null);
+  const gestureStart = useRef<
+    | { kind: "pinch"; dist: number; scale: number }
+    | { kind: "pan"; x: number; y: number; originX: number; originY: number }
+    | null
+  >(null);
+  // Read inside the effect via a ref so the listeners don't need to be torn
+  // down and re-attached on every transform change. Synced in its own
+  // effect rather than written during render, which React's stricter rules
+  // (correctly) treat as unsafe.
+  const transformRef = useRef(transform);
+  useEffect(() => {
+    transformRef.current = transform;
+  }, [transform]);
 
-  const onPointerDown = useCallback(
-    (e: ReactPointerEvent<HTMLElement>) => {
-      pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
 
-      if (pointers.current.size === 2) {
-        // Capture is best-effort (keeps tracking a finger that slides outside
-        // the element) — it can throw in edge cases where the browser
-        // doesn't consider the pointer "active" yet, which must not stop the
-        // pinch itself from being tracked below.
-        try {
-          e.currentTarget.setPointerCapture(e.pointerId);
-        } catch {
-          // ignore
+    const onTouchStart = (e: TouchEvent) => {
+      try {
+        if (e.touches.length === 2) {
+          const dist = touchDist(e.touches[0], e.touches[1]);
+          if (dist > 0) {
+            gestureStart.current = { kind: "pinch", dist, scale: transformRef.current.scale };
+            setIsGesturing(true);
+          }
+        } else if (e.touches.length === 1 && transformRef.current.scale > 1) {
+          const t = e.touches[0];
+          gestureStart.current = {
+            kind: "pan",
+            x: t.clientX,
+            y: t.clientY,
+            originX: transformRef.current.x,
+            originY: transformRef.current.y,
+          };
+          setIsGesturing(true);
         }
-        const [a, b] = Array.from(pointers.current.values());
-        pinchStart.current = { dist: Math.hypot(a.x - b.x, a.y - b.y), scale: transform.scale };
-        panStart.current = null;
-        setIsGesturing(true);
-      } else if (pointers.current.size === 1 && transform.scale > 1) {
-        try {
-          e.currentTarget.setPointerCapture(e.pointerId);
-        } catch {
-          // ignore
+      } catch {
+        // never let a gesture glitch crash the page
+      }
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      try {
+        const g = gestureStart.current;
+        if (!g) return;
+
+        if (g.kind === "pinch" && e.touches.length === 2) {
+          e.preventDefault();
+          const dist = touchDist(e.touches[0], e.touches[1]);
+          const nextScale = Math.min(maxScale, Math.max(1, g.scale * (dist / g.dist)));
+          setTransform((t) => (nextScale <= 1 ? IDENTITY : { ...t, scale: nextScale }));
+        } else if (g.kind === "pan" && e.touches.length === 1) {
+          e.preventDefault();
+          const t = e.touches[0];
+          const dx = t.clientX - g.x;
+          const dy = t.clientY - g.y;
+          setTransform((cur) => ({ ...cur, x: g.originX + dx, y: g.originY + dy }));
         }
-        panStart.current = { x: e.clientX, y: e.clientY, originX: transform.x, originY: transform.y };
-        setIsGesturing(true);
+      } catch {
+        // ignore
       }
-    },
-    [transform.scale, transform.x, transform.y]
-  );
+    };
 
-  const onPointerMove = useCallback(
-    (e: ReactPointerEvent<HTMLElement>) => {
-      if (!pointers.current.has(e.pointerId)) return;
-      pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
-
-      if (pointers.current.size === 2 && pinchStart.current) {
-        e.preventDefault();
-        const [a, b] = Array.from(pointers.current.values());
-        const dist = Math.hypot(a.x - b.x, a.y - b.y);
-        const nextScale = Math.min(
-          maxScale,
-          Math.max(1, pinchStart.current.scale * (dist / pinchStart.current.dist))
-        );
-        setTransform((t) => (nextScale <= 1 ? IDENTITY : { ...t, scale: nextScale }));
-      } else if (pointers.current.size === 1 && panStart.current) {
-        e.preventDefault();
-        const dx = e.clientX - panStart.current.x;
-        const dy = e.clientY - panStart.current.y;
-        setTransform((t) => ({ ...t, x: panStart.current!.originX + dx, y: panStart.current!.originY + dy }));
+    const onTouchEnd = (e: TouchEvent) => {
+      try {
+        gestureStart.current = null;
+        if (e.touches.length === 1 && transformRef.current.scale > 1) {
+          const t = e.touches[0];
+          gestureStart.current = {
+            kind: "pan",
+            x: t.clientX,
+            y: t.clientY,
+            originX: transformRef.current.x,
+            originY: transformRef.current.y,
+          };
+        } else if (e.touches.length === 0) {
+          setIsGesturing(false);
+          setTransform((cur) => (cur.scale <= 1.001 ? IDENTITY : cur));
+        }
+      } catch {
+        // ignore
       }
-    },
-    [maxScale]
-  );
+    };
 
-  const endPointer = useCallback((e: ReactPointerEvent<HTMLElement>) => {
-    pointers.current.delete(e.pointerId);
-    pinchStart.current = null;
-    panStart.current = null;
-    if (pointers.current.size === 1) {
-      const [p] = Array.from(pointers.current.values());
-      setTransform((t) => {
-        if (t.scale <= 1) return IDENTITY;
-        panStart.current = { x: p.x, y: p.y, originX: t.x, originY: t.y };
-        return t;
-      });
-    } else {
-      setIsGesturing(false);
-      setTransform((t) => (t.scale <= 1.001 ? IDENTITY : t));
-    }
-  }, []);
+    // Trackpad pinch on desktop arrives as a wheel event with ctrlKey set —
+    // there's no multi-touch to read, just a delta to apply directly.
+    const onWheel = (e: WheelEvent) => {
+      try {
+        if (!e.ctrlKey) return;
+        e.preventDefault();
+        setTransform((t) => {
+          const nextScale = Math.min(maxScale, Math.max(1, t.scale - e.deltaY * 0.01));
+          return nextScale <= 1 ? IDENTITY : { ...t, scale: nextScale };
+        });
+      } catch {
+        // ignore
+      }
+    };
 
-  const onDoubleClick = useCallback(() => {
-    setTransform((t) => (t.scale > 1 ? IDENTITY : { scale: 2, x: 0, y: 0 }));
-  }, []);
+    const onDoubleClick = () => {
+      try {
+        setTransform((t) => (t.scale > 1 ? IDENTITY : { scale: 2, x: 0, y: 0 }));
+      } catch {
+        // ignore
+      }
+    };
+
+    el.addEventListener("touchstart", onTouchStart, { passive: true });
+    el.addEventListener("touchmove", onTouchMove, { passive: false });
+    el.addEventListener("touchend", onTouchEnd, { passive: true });
+    el.addEventListener("touchcancel", onTouchEnd, { passive: true });
+    el.addEventListener("wheel", onWheel, { passive: false });
+    el.addEventListener("dblclick", onDoubleClick);
+
+    return () => {
+      el.removeEventListener("touchstart", onTouchStart);
+      el.removeEventListener("touchmove", onTouchMove);
+      el.removeEventListener("touchend", onTouchEnd);
+      el.removeEventListener("touchcancel", onTouchEnd);
+      el.removeEventListener("wheel", onWheel);
+      el.removeEventListener("dblclick", onDoubleClick);
+    };
+  }, [ref, maxScale]);
 
   return {
     isZoomed: transform.scale > 1,
     style: {
       transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`,
       transition: isGesturing ? "none" : "transform 0.15s ease-out",
-    },
-    handlers: {
-      onPointerDown,
-      onPointerMove,
-      onPointerUp: endPointer,
-      onPointerCancel: endPointer,
-      onDoubleClick,
     },
   };
 }
