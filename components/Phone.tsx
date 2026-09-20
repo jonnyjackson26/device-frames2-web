@@ -3,6 +3,7 @@
 import { useCallback, useId, useLayoutEffect, useRef, useState } from "react";
 import type { ChangeEvent, DragEvent } from "react";
 import { InlineSvg } from "@/components/InlineSvg";
+import { usePinchZoom } from "@/lib/use-pinch-zoom";
 import type { FrameTemplate } from "@/lib/types";
 
 const FRAME_CLASS_NAME = "block w-full h-full select-none pointer-events-none";
@@ -20,6 +21,7 @@ export function Phone({ userImageUrl, template, onFileSelect, emptyFrameUrl, cla
   const inputId = useId();
   const outerRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState<{ width: number; height: number } | null>(null);
+  const pinchZoom = usePinchZoom();
 
   const frameSize = template?.frameSize;
   const ratio = frameSize ? frameSize.width / frameSize.height : FALLBACK_RATIO;
@@ -85,12 +87,16 @@ export function Phone({ userImageUrl, template, onFileSelect, emptyFrameUrl, cla
   return (
     <div
       ref={outerRef}
-      className={`relative w-full h-full flex items-center justify-center bg-transparent ${className ?? ""}`}
+      className={`relative w-full h-full flex items-center justify-center bg-transparent touch-none overflow-hidden ${className ?? ""}`}
       onDrop={handleDrop}
       onDragOver={handleDragOver}
+      {...pinchZoom.handlers}
     >
       {size && (
-        <div className="relative" style={{ width: size.width, height: size.height }}>
+        <div
+          className="relative"
+          style={{ width: size.width, height: size.height, ...pinchZoom.style }}
+        >
           {frameImageUrl &&
             (frameImageUrl.endsWith(".svg") ? (
               // Inline, not <img src>: Safari decodes an <img>-sourced SVG to a

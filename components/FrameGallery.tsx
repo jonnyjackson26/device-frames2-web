@@ -86,7 +86,7 @@ export default function FrameGallery({ frames }: FrameGalleryProps) {
             placeholder="Search by device or variant..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full px-4 py-3 rounded-lg bg-white border border-slate-200 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors shadow-sm"
+            className="w-full px-4 py-3 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 transition-colors shadow-sm"
           />
         </div>
 
@@ -94,10 +94,10 @@ export default function FrameGallery({ frames }: FrameGalleryProps) {
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setSelectedCategory(null)}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
               selectedCategory === null
                 ? 'bg-blue-600 text-white shadow-md'
-                : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 shadow-sm'
+                : 'bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 shadow-sm'
             }`}
           >
             All Categories
@@ -106,10 +106,10 @@ export default function FrameGallery({ frames }: FrameGalleryProps) {
             <button
               key={category}
               onClick={() => setSelectedCategory(category)}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors capitalize ${
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors capitalize cursor-pointer ${
                 selectedCategory === category
                   ? 'bg-blue-600 text-white shadow-md'
-                  : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 shadow-sm'
+                  : 'bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 shadow-sm'
               }`}
             >
               {category}
@@ -118,13 +118,13 @@ export default function FrameGallery({ frames }: FrameGalleryProps) {
         </div>
 
         {/* Results count */}
-        <p className="text-slate-600 text-sm">
+        <p className="text-zinc-500 dark:text-zinc-400 text-sm">
           Showing {deviceGroups.length} of {totalDevices} devices
         </p>
       </div>
 
       {/* Gallery Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {deviceGroups.map((group) => (
           <FrameCard
             key={`${group.category}-${group.device}`}
@@ -138,7 +138,7 @@ export default function FrameGallery({ frames }: FrameGalleryProps) {
       {/* Empty state */}
       {deviceGroups.length === 0 && (
         <div className="text-center py-12">
-          <p className="text-slate-500 text-lg">No devices found matching your criteria</p>
+          <p className="text-zinc-500 dark:text-zinc-400 text-lg">No devices found matching your criteria</p>
         </div>
       )}
     </div>

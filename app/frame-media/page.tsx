@@ -52,21 +52,24 @@ export default function FrameMediaPage() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100">
-      <div className="container mx-auto px-4 py-12">
+    <main className="min-h-screen bg-dot-grid bg-zinc-50 dark:bg-zinc-950">
+      <div className="container mx-auto px-4 py-12 max-w-7xl">
         <BackButton href="/" label="Back to Home" />
         <div className="text-center mb-12">
-          <h1 className="text-5xl font-bold text-slate-900 mb-4">
+          <p className="text-xs font-semibold uppercase tracking-widest text-blue-600 dark:text-blue-400 mb-2">
+            Frame Media
+          </p>
+          <h1 className="text-4xl font-bold text-zinc-900 dark:text-zinc-50 mb-3">
             Device Frame Gallery
           </h1>
-          <p className="text-xl text-slate-600 mb-6">
+          <p className="text-lg text-zinc-600 dark:text-zinc-400 mb-4">
             Browse and download device frame PNGs, SVGs, and templates
           </p>
           <a
             href="https://github.com/jonnyjackson26/creating-device-frames"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-block text-blue-600 hover:text-blue-700 font-medium transition-colors"
+            className="inline-block text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium transition-colors"
           >
             View Source Data on GitHub
           </a>
@@ -75,15 +78,15 @@ export default function FrameMediaPage() {
         {loading && (
           <div className="flex items-center justify-center py-20">
             <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4 mx-auto"></div>
-              <p className="text-slate-600">Loading device frames...</p>
+              <div className="animate-spin rounded-full h-10 w-10 border-2 border-zinc-200 dark:border-zinc-800 border-t-blue-600 mb-4 mx-auto"></div>
+              <p className="text-zinc-500 dark:text-zinc-400">Loading device frames...</p>
             </div>
           </div>
         )}
 
         {error && (
-          <div className="bg-red-50 border border-red-300 rounded-lg p-6 mb-8">
-            <p className="text-red-800">Error: {error}</p>
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6 mb-8">
+            <p className="text-red-800 dark:text-red-200">Error: {error}</p>
           </div>
         )}
 
@@ -93,7 +96,7 @@ export default function FrameMediaPage() {
 
         {!loading && frames.length === 0 && !error && (
           <div className="text-center py-20">
-            <p className="text-slate-600 text-lg">No device frames found</p>
+            <p className="text-zinc-500 dark:text-zinc-400 text-lg">No device frames found</p>
           </div>
         )}
       </div>

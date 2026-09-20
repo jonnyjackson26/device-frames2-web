@@ -166,10 +166,10 @@ export default function Home() {
   const frameImageUrl = template?.frame ?? "/placeholder_frame.svg";
 
   return (
-    <div className="h-screen bg-gradient-to-br from-zinc-50 to-zinc-100 dark:from-zinc-950 dark:to-black font-sans overflow-auto md:overflow-hidden p-4">
-      <main className="flex flex-col md:flex-row md:h-full gap-8">
-        {/* Phone Panel */}
-        <div className="h-screen md:h-full md:flex-1 min-w-0 bg-white dark:bg-zinc-900 rounded-xl shadow-lg p-6 md:overflow-auto">
+    <div className="h-screen bg-dot-grid bg-zinc-50 dark:bg-zinc-950 font-sans overflow-auto md:overflow-hidden">
+      <main className="flex flex-col md:flex-row md:h-full">
+        {/* Phone canvas — sits directly on the dot-grid background, like a whiteboard */}
+        <div className="h-screen md:h-full md:flex-1 min-w-0 p-6 md:p-10">
           <Phone
             userImageUrl={previewUrl}
             template={template}
@@ -178,8 +178,8 @@ export default function Home() {
           />
         </div>
 
-        {/* Settings Panel */}
-        <div className="w-full md:w-80 bg-white dark:bg-zinc-900 rounded-xl shadow-lg p-6 md:overflow-auto">
+        {/* Settings Sidebar */}
+        <div className="w-full md:w-80 shrink-0 bg-white dark:bg-zinc-900 border-t md:border-t-0 md:border-l border-zinc-200 dark:border-zinc-800 shadow-[-8px_0_24px_-12px_rgba(0,0,0,0.08)] p-6 md:overflow-auto">
           <SettingsPanel
             deviceList={deviceList}
             selectedCategory={category}

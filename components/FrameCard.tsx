@@ -4,7 +4,7 @@ import { useState } from 'react';
 import JSZip from 'jszip';
 import { InlineSvg } from '@/components/InlineSvg';
 
-const THUMBNAIL_CLASS_NAME = 'object-contain max-w-full max-h-full';
+const THUMBNAIL_CLASS_NAME = 'object-contain max-w-full max-h-full drop-shadow-sm';
 
 interface FrameTemplate {
   frame: string;
@@ -28,7 +28,7 @@ interface DeviceFrame {
   framePath: string;
   svgPath: string | null;
   thumbnail: string;
-  template: FrameTemplate;
+  template: FrameTemplate & { hexColor?: string };
 }
 
 interface FrameCardProps {
@@ -88,9 +88,9 @@ export default function FrameCard({ category, device, variants }: FrameCardProps
   };
 
   return (
-    <div className="bg-white rounded-lg overflow-hidden shadow-md transition-all hover:shadow-lg hover:scale-105">
-      {/* Frame Preview */}
-      <div className="relative w-full h-48 bg-slate-100 flex items-center justify-center overflow-hidden group">
+    <div className="group bg-white dark:bg-zinc-900 rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-800 shadow-sm hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200">
+      {/* Frame Preview — tall/portrait, like the phones themselves */}
+      <div className="relative w-full aspect-[3/4] bg-zinc-50 dark:bg-zinc-800/60 flex items-center justify-center overflow-hidden p-6">
         {selectedVariant.thumbnail ? (
           // Inline, not <img src> or next/image: Safari doesn't reliably
           // re-render an <img>-sourced SVG as vector data on pinch-zoom (see
@@ -106,7 +106,7 @@ export default function FrameCard({ category, device, variants }: FrameCardProps
             />
           )
         ) : (
-          <div className="text-xs text-slate-400">No preview</div>
+          <div className="text-xs text-zinc-400">No preview</div>
         )}
 
         {/* Download Icon Overlay - Always visible on mobile, hover on desktop */}
@@ -116,17 +116,18 @@ export default function FrameCard({ category, device, variants }: FrameCardProps
           className="absolute inset-0 transition-all duration-200 flex items-center justify-center cursor-pointer"
           aria-label="Download all files"
         >
-          <div className="opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200">
+          <div className="opacity-0 group-hover:opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200 bg-black/0 group-hover:bg-black/5 dark:group-hover:bg-white/5 absolute inset-0" />
+          <div className="opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200 relative">
             {isLoading ? (
-              <div className="bg-white rounded-full p-4 shadow-lg">
-                <svg className="animate-spin h-8 w-8 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <div className="bg-white dark:bg-zinc-900 rounded-full p-3.5 shadow-lg">
+                <svg className="animate-spin h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
               </div>
             ) : (
-              <div className="bg-white rounded-full p-4 shadow-lg hover:scale-110 transition-transform">
-                <svg className="h-8 w-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <div className="bg-white dark:bg-zinc-900 rounded-full p-3.5 shadow-lg hover:scale-110 transition-transform">
+                <svg className="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                 </svg>
               </div>
@@ -137,27 +138,36 @@ export default function FrameCard({ category, device, variants }: FrameCardProps
 
       {/* Content */}
       <div className="p-4">
-        <div className="mb-4">
-          <p className="text-slate-500 text-xs uppercase tracking-wide">{category}</p>
-          <h3 className="text-slate-900 font-semibold text-sm mb-3">
-            {device}
-          </h3>
+        <p className="text-zinc-400 dark:text-zinc-500 text-[11px] uppercase tracking-wide font-medium">{category}</p>
+        <h3 className="text-zinc-900 dark:text-zinc-50 font-semibold text-sm mb-3">{device}</h3>
 
-          {/* Variant Dropdown */}
-          <div>
-            <select
-              value={selectedVariantIndex}
-              onChange={(e) => setSelectedVariantIndex(parseInt(e.target.value))}
-              className="w-full px-3 py-2 rounded-lg bg-white border border-slate-200 text-slate-900 text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors appearance-none cursor-pointer"
-            >
-              {variants.map((variant, index) => (
-                <option key={index} value={index}>
-                  {variant.variant}
-                </option>
-              ))}
-            </select>
-          </div>
+        {/* Color swatches — click to switch variant */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {variants.map((variant, index) => {
+            const hex = variant.template.hexColor;
+            const isSelected = index === selectedVariantIndex;
+            return (
+              <button
+                key={index}
+                onClick={() => setSelectedVariantIndex(index)}
+                title={variant.variant}
+                aria-label={`${variant.variant}${hex ? ` (${hex})` : ''}`}
+                aria-pressed={isSelected}
+                className={`h-6 w-6 rounded-full cursor-pointer transition-transform ${
+                  isSelected
+                    ? 'ring-2 ring-offset-2 ring-blue-500 dark:ring-offset-zinc-900 scale-105'
+                    : 'ring-1 ring-inset ring-black/10 dark:ring-white/15 hover:scale-105'
+                }`}
+                style={{ backgroundColor: hex || '#cccccc' }}
+              />
+            );
+          })}
         </div>
+        {selectedVariant.template.hexColor && (
+          <p className="mt-2 text-[11px] font-mono uppercase text-zinc-400 dark:text-zinc-500">
+            {selectedVariant.template.hexColor}
+          </p>
+        )}
       </div>
     </div>
   );

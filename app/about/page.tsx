@@ -4,44 +4,46 @@ const linkClass = "text-blue-600 dark:text-blue-400 hover:underline";
 
 export default function About() {
   return (
-    <main className="min-h-screen max-w-2xl mx-auto px-4 py-12">
-      <BackButton />
+    <main className="min-h-screen bg-dot-grid bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
+      <div className="max-w-2xl mx-auto px-4 py-12">
+        <BackButton />
 
-      <h1 className="text-2xl font-bold mb-6">About Device Frames</h1>
+        <h1 className="text-2xl font-bold mb-6">About Device Frames</h1>
 
-      <div className="space-y-4 leading-relaxed">
-        <p>
-          Device Frames is a free tool for putting screenshots and images into realistic
-          device mockups — starting with iPhones, with more devices on the way. It was
-          built by{" "}
-          <a href="https://jonny-jackson.com" target="_blank" rel="noopener noreferrer" className={linkClass}>
-            Jonny Jackson
-          </a>.
-        </p>
+        <div className="space-y-4 leading-relaxed">
+          <p>
+            Device Frames is a free tool for putting screenshots and images into realistic
+            device mockups — starting with iPhones, with more devices on the way. It was
+            built by{" "}
+            <a href="https://jonny-jackson.com" target="_blank" rel="noopener noreferrer" className={linkClass}>
+              Jonny Jackson
+            </a>.
+          </p>
 
-        <p>
-          This site composites frames itself, entirely in your browser (no upload, no
-          server round-trip) — there&apos;s no separate API to call. The frames themselves
-          (transparent PNGs and SVGs) come from{" "}
-          <a href="https://github.com/jonnyjackson26/creating-device-frames" target="_blank" rel="noopener noreferrer" className={linkClass}>
-            creating-device-frames
-          </a>, a data-driven, open-source device-frame library.
-        </p>
+          <p>
+            This site composites frames itself, entirely in your browser (no upload, no
+            server round-trip) — there&apos;s no separate API to call. The frames themselves
+            (transparent PNGs and SVGs) come from{" "}
+            <a href="https://github.com/jonnyjackson26/creating-device-frames" target="_blank" rel="noopener noreferrer" className={linkClass}>
+              creating-device-frames
+            </a>, a data-driven, open-source device-frame library.
+          </p>
 
-        <p>
-          Want the raw frame PNGs and SVGs instead? Browse and download them on the{" "}
-          <a href="/frame-media" className={linkClass}>
-            frame media
-          </a>{" "}
-          page.
-        </p>
+          <p>
+            Want the raw frame PNGs and SVGs instead? Browse and download them on the{" "}
+            <a href="/frame-media" className={linkClass}>
+              frame media
+            </a>{" "}
+            page.
+          </p>
 
-        <p>
-          Need more device frames or have a feature request? Email{" "}
-          <a href="mailto:jrsjackson26@gmail.com" className={linkClass}>
-            jrsjackson26@gmail.com
-          </a>.
-        </p>
+          <p>
+            Need more device frames or have a feature request? Email{" "}
+            <a href="mailto:jrsjackson26@gmail.com" className={linkClass}>
+              jrsjackson26@gmail.com
+            </a>.
+          </p>
+        </div>
       </div>
     </main>
   );
