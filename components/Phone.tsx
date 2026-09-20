@@ -2,7 +2,10 @@
 
 import { useCallback, useId } from "react";
 import type { ChangeEvent, DragEvent } from "react";
+import { InlineSvg } from "@/components/InlineSvg";
 import type { FrameTemplate } from "@/lib/types";
+
+const FRAME_CLASS_NAME = "block max-w-full max-h-full w-auto h-auto select-none pointer-events-none";
 
 interface PhoneProps {
   userImageUrl: string | null;
@@ -56,12 +59,16 @@ export function Phone({ userImageUrl, template, onFileSelect, emptyFrameUrl, cla
       onDragOver={handleDragOver}
     >
       {frameImageUrl && (
-        <img
-          src={frameImageUrl}
-          alt="Device frame"
-          className="block max-w-full max-h-full w-auto h-auto select-none pointer-events-none"
-          draggable={false}
-        />
+        frameImageUrl.endsWith(".svg") ? (
+          // Inline, not <img src>: Safari decodes an <img>-sourced SVG to a
+          // bitmap sized for its on-screen box and doesn't reliably re-render
+          // that as vector data on pinch-zoom, so it blurs like a raster
+          // image past that resolution. Inlining keeps it real vector DOM
+          // content, redrawn crisply at any zoom.
+          <InlineSvg src={frameImageUrl} svgClassName={FRAME_CLASS_NAME} />
+        ) : (
+          <img src={frameImageUrl} alt="Device frame" className={FRAME_CLASS_NAME} draggable={false} />
+        )
       )}
 
       {/* User's screenshot, clipped to the frame's exact rounded screen cutout so

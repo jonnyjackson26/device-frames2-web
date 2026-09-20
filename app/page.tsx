@@ -163,7 +163,7 @@ export default function Home() {
     setError(null);
   };
 
-  const frameImageUrl = template?.frame ?? "/placeholder_frame.png";
+  const frameImageUrl = template?.frame ?? "/placeholder_frame.svg";
 
   return (
     <div className="h-screen bg-gradient-to-br from-zinc-50 to-zinc-100 dark:from-zinc-950 dark:to-black font-sans overflow-auto md:overflow-hidden p-4">

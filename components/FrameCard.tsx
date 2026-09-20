@@ -2,6 +2,9 @@
 
 import { useState } from 'react';
 import JSZip from 'jszip';
+import { InlineSvg } from '@/components/InlineSvg';
+
+const THUMBNAIL_CLASS_NAME = 'object-contain max-w-full max-h-full';
 
 interface FrameTemplate {
   frame: string;
@@ -89,14 +92,19 @@ export default function FrameCard({ category, device, variants }: FrameCardProps
       {/* Frame Preview */}
       <div className="relative w-full h-48 bg-slate-100 flex items-center justify-center overflow-hidden group">
         {selectedVariant.thumbnail ? (
-          // Plain <img>, not next/image: these are small, self-hosted SVGs we
-          // vendor ourselves, so there's nothing for Next's image optimizer
-          // to usefully do (and it blocks SVG sources by default anyway).
-          <img
-            src={selectedVariant.thumbnail}
-            alt={`${device} - ${selectedVariant.variant}`}
-            className="object-contain max-w-full max-h-full"
-          />
+          // Inline, not <img src> or next/image: Safari doesn't reliably
+          // re-render an <img>-sourced SVG as vector data on pinch-zoom (see
+          // Phone.tsx), and next/image blocks SVG sources by default anyway
+          // — there's nothing for its optimizer to do on a 15KB local file.
+          selectedVariant.thumbnail.endsWith('.svg') ? (
+            <InlineSvg src={selectedVariant.thumbnail} svgClassName={THUMBNAIL_CLASS_NAME} />
+          ) : (
+            <img
+              src={selectedVariant.thumbnail}
+              alt={`${device} - ${selectedVariant.variant}`}
+              className={THUMBNAIL_CLASS_NAME}
+            />
+          )
         ) : (
           <div className="text-xs text-slate-400">No preview</div>
         )}
