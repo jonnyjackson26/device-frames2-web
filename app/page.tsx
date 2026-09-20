@@ -169,13 +169,12 @@ export default function Home() {
     <div className="h-screen bg-gradient-to-br from-zinc-50 to-zinc-100 dark:from-zinc-950 dark:to-black font-sans overflow-auto md:overflow-hidden p-4">
       <main className="flex flex-col md:flex-row md:h-full gap-8">
         {/* Phone Panel */}
-        <div className="h-screen md:h-full md:flex-1 min-w-0 bg-white dark:bg-zinc-900 rounded-xl shadow-lg p-6 flex items-center justify-center md:overflow-auto">
+        <div className="h-screen md:h-full md:flex-1 min-w-0 bg-white dark:bg-zinc-900 rounded-xl shadow-lg p-6 md:overflow-auto">
           <Phone
             userImageUrl={previewUrl}
             template={template}
             onFileSelect={handleFileSelect}
             emptyFrameUrl={frameImageUrl}
-            className="max-h-full"
           />
         </div>
 

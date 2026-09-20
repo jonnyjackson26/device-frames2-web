@@ -1,11 +1,12 @@
 "use client";
 
-import { useCallback, useId } from "react";
+import { useCallback, useId, useLayoutEffect, useRef, useState } from "react";
 import type { ChangeEvent, DragEvent } from "react";
 import { InlineSvg } from "@/components/InlineSvg";
 import type { FrameTemplate } from "@/lib/types";
 
-const FRAME_CLASS_NAME = "block max-w-full max-h-full w-auto h-auto select-none pointer-events-none";
+const FRAME_CLASS_NAME = "block w-full h-full select-none pointer-events-none";
+const FALLBACK_RATIO = 9 / 19.5; // used only before a template has loaded
 
 interface PhoneProps {
   userImageUrl: string | null;
@@ -17,6 +18,41 @@ interface PhoneProps {
 
 export function Phone({ userImageUrl, template, onFileSelect, emptyFrameUrl, className }: PhoneProps) {
   const inputId = useId();
+  const outerRef = useRef<HTMLDivElement>(null);
+  const [size, setSize] = useState<{ width: number; height: number } | null>(null);
+
+  const frameSize = template?.frameSize;
+  const ratio = frameSize ? frameSize.width / frameSize.height : FALLBACK_RATIO;
+
+  // A plain inline <svg> (unlike <img>) doesn't reliably participate in the
+  // browser's replaced-element "shrink to fit while keeping aspect ratio"
+  // sizing algorithm — max-height:100% on it can't resolve while its own
+  // auto-height ancestor's height is still being computed, so it can render
+  // at its full intrinsic size and overflow its container instead of being
+  // capped. Measuring the available space ourselves and setting an explicit
+  // pixel size sidesteps that circularity entirely.
+  useLayoutEffect(() => {
+    const el = outerRef.current;
+    if (!el) return;
+
+    const measure = () => {
+      const availW = el.clientWidth;
+      const availH = el.clientHeight;
+      if (!availW || !availH) return;
+      let width = availW;
+      let height = width / ratio;
+      if (height > availH) {
+        height = availH;
+        width = height * ratio;
+      }
+      setSize({ width, height });
+    };
+
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [ratio]);
 
   const handleDrop = useCallback(
     (e: DragEvent<HTMLDivElement>) => {
@@ -45,51 +81,49 @@ export function Phone({ userImageUrl, template, onFileSelect, emptyFrameUrl, cla
 
   const frameImageUrl = template?.frame ?? emptyFrameUrl;
   const screen = template?.screen;
-  const frameSize = template?.frameSize;
 
   return (
-    // Shrink-wraps to the frame <img>'s own rendered box (native `<img>`
-    // sizing, not a manually-computed aspect-ratio) so the percentage-
-    // positioned screenshot overlay below is always measured against the
-    // frame's *actual* box — never a taller/wider container that would
-    // scale it wrong and let it spill past the frame's edges.
     <div
-      className={`relative inline-block max-w-full max-h-full min-h-0 min-w-0 bg-transparent ${className ?? ""}`}
+      ref={outerRef}
+      className={`relative w-full h-full flex items-center justify-center bg-transparent ${className ?? ""}`}
       onDrop={handleDrop}
       onDragOver={handleDragOver}
     >
-      {frameImageUrl && (
-        frameImageUrl.endsWith(".svg") ? (
-          // Inline, not <img src>: Safari decodes an <img>-sourced SVG to a
-          // bitmap sized for its on-screen box and doesn't reliably re-render
-          // that as vector data on pinch-zoom, so it blurs like a raster
-          // image past that resolution. Inlining keeps it real vector DOM
-          // content, redrawn crisply at any zoom.
-          <InlineSvg src={frameImageUrl} svgClassName={FRAME_CLASS_NAME} />
-        ) : (
-          <img src={frameImageUrl} alt="Device frame" className={FRAME_CLASS_NAME} draggable={false} />
-        )
-      )}
+      {size && (
+        <div className="relative" style={{ width: size.width, height: size.height }}>
+          {frameImageUrl &&
+            (frameImageUrl.endsWith(".svg") ? (
+              // Inline, not <img src>: Safari decodes an <img>-sourced SVG to a
+              // bitmap sized for its on-screen box and doesn't reliably re-render
+              // that as vector data on pinch-zoom, so it blurs like a raster
+              // image past that resolution. Inlining keeps it real vector DOM
+              // content, redrawn crisply at any zoom.
+              <InlineSvg src={frameImageUrl} svgClassName={FRAME_CLASS_NAME} />
+            ) : (
+              <img src={frameImageUrl} alt="Device frame" className={FRAME_CLASS_NAME} draggable={false} />
+            ))}
 
-      {/* User's screenshot, clipped to the frame's exact rounded screen cutout so
-          its square corners never poke out past the frame's rounded edge. Pure
-          CSS (positioned + clip-path), so it shows the instant a file is picked
-          — no processing step, no spinner. */}
-      {userImageUrl && screen && frameSize && (
-        <img
-          src={userImageUrl}
-          alt="Your screenshot"
-          className="absolute object-cover pointer-events-none"
-          style={{
-            left: `${(screen.x / frameSize.width) * 100}%`,
-            top: `${(screen.y / frameSize.height) * 100}%`,
-            width: `${(screen.width / frameSize.width) * 100}%`,
-            height: `${(screen.height / frameSize.height) * 100}%`,
-            clipPath: template?.screenClipPolygon
-              ? `polygon(${template.screenClipPolygon})`
-              : undefined,
-          }}
-        />
+          {/* User's screenshot, clipped to the frame's exact rounded screen cutout so
+              its square corners never poke out past the frame's rounded edge. Pure
+              CSS (positioned + clip-path), so it shows the instant a file is picked
+              — no processing step, no spinner. */}
+          {userImageUrl && screen && frameSize && (
+            <img
+              src={userImageUrl}
+              alt="Your screenshot"
+              className="absolute object-cover pointer-events-none"
+              style={{
+                left: `${(screen.x / frameSize.width) * 100}%`,
+                top: `${(screen.y / frameSize.height) * 100}%`,
+                width: `${(screen.width / frameSize.width) * 100}%`,
+                height: `${(screen.height / frameSize.height) * 100}%`,
+                clipPath: template?.screenClipPolygon
+                  ? `polygon(${template.screenClipPolygon})`
+                  : undefined,
+              }}
+            />
+          )}
+        </div>
       )}
 
       {!userImageUrl && (
